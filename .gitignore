@@ -1,8 +1,11 @@
-venv/
-*/__pycache__/
-_new/
-**/_processed/
 rtkms/
+project.md
+workflow.md
+stages.md
+backlog.md
+
+**/__pycache__/
+**/_processed/
 
 *.pyc
 *$*.bkp

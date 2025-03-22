@@ -30,17 +30,18 @@
 - `templates_path`: ${base_path}/templates
 - `rules_path`: ${base_path}/rules
 - `meta_path`: ${base_path}/meta
-- `archive_path`: _processed # Папка для архивации ненужных файлов
+- `archive_path`: _processed
+- `utils_path`: rtkms-core/utils
+- `sources_path`: src
 
 ## Настройки обработки файлов
-- `auto_archive_processed`: false # Автоматически архивировать обработанные файлы
-- `keep_archive_days`: 30 # Хранить архив N дней
+- `auto_archive_processed`: true # Автоматически архивировать обработанные файлы
 - `scan_for_unused`: true # Сканировать наличие неиспользуемых файлов
 
 ## Настройки ИИ-ассистента
 - `auto_index`: true # Автоматическое обновление индексов
 - `auto_linking`: true # Автоматическое предложение связей
-- `verbose_mode`: false # Подробные сообщения от ИИ
+- `verbose_mode`: true # Подробные сообщения от ИИ
 - `strict_mode`: true # Строгое соблюдение правил системы
 - `interactive_mode`: medium # Частота запросов подтверждения у пользователя
-- `interactive_questions`: critical # Типы вопросов, требующие подтверждения 
+- `interactive_questions`: critical # Типы вопросов, требующие подтверждения

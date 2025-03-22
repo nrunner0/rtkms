@@ -8,6 +8,34 @@ YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m' # No Color
 
+# Functions
+function check_structure() {
+    local missing=0
+    
+    # Check for core files
+    if [ ! -f "project.md" ]; then
+        echo -e "${RED}ERROR: project.md not found${NC}"
+        missing=1
+    fi
+    
+    if [ ! -f "stages.md" ]; then
+        echo -e "${RED}ERROR: stages.md not found${NC}"
+        missing=1
+    fi
+    
+    # Check for directory structure
+    if [ ! -d "rtkms" ]; then
+        echo -e "${RED}ERROR: rtkms directory not found${NC}"
+        missing=1
+    elif [ ! -d "rtkms/meta" ] || [ ! -d "rtkms/docs" ]; then
+        echo -e "${RED}ERROR: rtkms structure incomplete${NC}"
+        missing=1
+    fi
+    
+    # Return status
+    return $missing
+}
+
 # Check for rtkms structure
 if [ ! -d "./rtkms" ]; then
     echo -e "${RED}Error: rtkms structure not found.${NC}"
@@ -24,14 +52,13 @@ if [ ! -f "./rtkms/meta/config.md" ]; then
     exit 1
 fi
 
-# Check for project file and stage files
+# Check for project file and stages file
 if [ ! -f "./project.md" ]; then
     echo -e "${YELLOW}Warning: Project file not found. It is recommended to create a project file.${NC}"
 fi
 
-# Check for stage files using glob pattern
-if [ -z "$(ls ./stage*.md 2>/dev/null)" ]; then
-    echo -e "${YELLOW}Warning: No stage files found. It is recommended to create stage files.${NC}"
+if [ ! -f "./stages.md" ]; then
+    echo -e "${YELLOW}Warning: Stages file not found. It is recommended to create a stages file.${NC}"
 fi
 
 # Get project information
@@ -91,9 +118,9 @@ echo "- Knowledge documents: $kn_count"
 # Display information about current stage
 # Get stage code from stages.md, adapt to the language used
 if [ "$language" == "ru" ]; then
-    current_stage=$(grep -A 3 "в работе\|in_progress" ./rtkms/meta/stages.md | grep "Код этапа\|Stage code" | head -n 1 | cut -d ":" -f 2 | sed 's/^ *//' | tr -d " ")
+    current_stage=$(grep -A 3 "в работе\|in_progress" ./stages.md | grep "Код этапа\|Stage code" | head -n 1 | cut -d ":" -f 2 | sed 's/^ *//' | tr -d " ")
 else
-    current_stage=$(grep -A 3 "in_progress" ./rtkms/meta/stages.md | grep "Stage code" | head -n 1 | cut -d ":" -f 2 | sed 's/^ *//' | tr -d " ")
+    current_stage=$(grep -A 3 "in_progress" ./stages.md | grep "Stage code\|Stage Code" | head -n 1 | cut -d ":" -f 2 | sed 's/^ *//' | tr -d " ")
 fi
 
 if [ -n "$current_stage" ]; then
@@ -112,7 +139,7 @@ if [ -n "$current_stage" ]; then
         done
     fi
 else
-    echo -e "${YELLOW}Current stage not defined. It is recommended to set stage status in file: rtkms/meta/stages.md${NC}"
+    echo -e "${YELLOW}Current stage not defined. It is recommended to set stage status in file: stages.md${NC}"
 fi
 
 # Localize messages based on language
@@ -124,7 +151,7 @@ if [ "$language" == "ru" ]; then
     MENU_ITEM_3="Создать новый документ знаний"
     MENU_ITEM_4="Обновить индексы"
     MENU_ITEM_5="Редактировать файл проекта"
-    MENU_ITEM_6="Редактировать файлы этапов"
+    MENU_ITEM_6="Редактировать файл этапов"
     MENU_ITEM_7="Просмотреть правила работы с rtkms"
     MENU_ITEM_8="Просмотреть статусы этапов"
     MENU_ITEM_9="Проверить диаграмму PlantUML"
@@ -136,7 +163,7 @@ if [ "$language" == "ru" ]; then
     FUNCTION_CREATE_KNOWLEDGE="Функция создания документа знаний:"
     FUNCTION_UPDATE_INDEXES="Функция обновления индексов:"
     FUNCTION_EDIT_PROJECT="Редактирование файла проекта:"
-    FUNCTION_EDIT_STAGES="Редактирование файлов этапов:"
+    FUNCTION_EDIT_STAGES="Редактирование файла этапов:"
     FUNCTION_CHECK_PUML="Проверка диаграммы PlantUML:"
     FUNCTION_UPDATE_CORE="Обновление rtkms-core:"
     INVALID_SELECTION="Неверный выбор"
@@ -149,7 +176,7 @@ else
     MENU_ITEM_3="Create new knowledge document"
     MENU_ITEM_4="Update indexes"
     MENU_ITEM_5="Edit project file"
-    MENU_ITEM_6="Edit stage files"
+    MENU_ITEM_6="Edit stages file"
     MENU_ITEM_7="View rtkms rules"
     MENU_ITEM_8="View stage statuses"
     MENU_ITEM_9="Check PlantUML diagram"
@@ -161,7 +188,7 @@ else
     FUNCTION_CREATE_KNOWLEDGE="Create knowledge document function:"
     FUNCTION_UPDATE_INDEXES="Update indexes function:"
     FUNCTION_EDIT_PROJECT="Edit project file:"
-    FUNCTION_EDIT_STAGES="Edit stage files:"
+    FUNCTION_EDIT_STAGES="Edit stages file:"
     FUNCTION_CHECK_PUML="Check PlantUML diagram:"
     FUNCTION_UPDATE_CORE="Update rtkms-core:"
     INVALID_SELECTION="Invalid selection"
@@ -234,54 +261,24 @@ case $action in
         ;;
     6)
         echo -e "${GREEN}${FUNCTION_EDIT_STAGES}${NC}"
-        # Find existing stage files
-        stage_files=$(find . -maxdepth 1 -name "stage*.md" | sort)
-        
-        if [ -n "$stage_files" ]; then
-            if [ "$language" == "ru" ]; then
-                echo "Доступные файлы этапов:"
-            else
-                echo "Available stage files:"
+        if [ -f "./stages.md" ]; then
+            editor_cmd="nano"
+            if command -v editor &> /dev/null; then
+                editor_cmd="editor"
+            elif command -v vim &> /dev/null; then
+                editor_cmd="vim"
             fi
-            i=1
-            for file in $stage_files; do
-                echo "$i) $file"
-                i=$((i+1))
-            done
-            
+            $editor_cmd ./stages.md
             if [ "$language" == "ru" ]; then
-                read -p "Выберите файл этапа для редактирования (номер): " stage_num
+                echo -e "${GREEN}Файл этапов обновлен${NC}"
             else
-                read -p "Select stage file to edit (number): " stage_num
-            fi
-            
-            selected_file=$(echo "$stage_files" | sed -n "${stage_num}p")
-            
-            if [ -n "$selected_file" ]; then
-                editor_cmd="nano"
-                if command -v editor &> /dev/null; then
-                    editor_cmd="editor"
-                elif command -v vim &> /dev/null; then
-                    editor_cmd="vim"
-                fi
-                $editor_cmd "$selected_file"
-                if [ "$language" == "ru" ]; then
-                    echo -e "${GREEN}Файл этапа обновлен: $selected_file${NC}"
-                else
-                    echo -e "${GREEN}Stage file updated: $selected_file${NC}"
-                fi
-            else
-                if [ "$language" == "ru" ]; then
-                    echo -e "${RED}Неверный выбор.${NC}"
-                else
-                    echo -e "${RED}Invalid selection.${NC}"
-                fi
+                echo -e "${GREEN}Stages file updated${NC}"
             fi
         else
             if [ "$language" == "ru" ]; then
-                echo -e "${RED}Файлы этапов не найдены. Запустите init-rtkms.sh для создания файлов этапов.${NC}"
+                echo -e "${RED}Файл этапов не найден. Запустите init-rtkms.sh для создания файла этапов.${NC}"
             else
-                echo -e "${RED}No stage files found. Run init-rtkms.sh to create stage files.${NC}"
+                echo -e "${RED}Stages file not found. Run init-rtkms.sh to create stages file.${NC}"
             fi
         fi
         ;;
@@ -302,7 +299,7 @@ case $action in
         fi
         ;;
     8) 
-        cat ./rtkms/meta/stages.md 
+        cat ./stages.md 
         ;;
     9)
         echo -e "${GREEN}${FUNCTION_CHECK_PUML}${NC}"
@@ -312,7 +309,7 @@ case $action in
             read -p "Enter path to .puml file: " puml_file
         fi
         if [ -f "$puml_file" ]; then
-            ./rtkms/utils/validate_puml.sh "$puml_file"
+            ./rtkms-core/utils/validate_puml.sh "$puml_file"
         else
             if [ "$language" == "ru" ]; then
                 echo -e "${RED}Файл не найден: $puml_file${NC}"
